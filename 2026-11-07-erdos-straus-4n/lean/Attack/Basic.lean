@@ -56,17 +56,20 @@ theorem es_of_core (n x c : Nat)
     (h : n * c + 2 * (n * x) = 4 * (x * c)) :
     ES n x c c := by
   unfold ES
-  -- 两端同乘 c 后的形状（与 h 的 c 倍比较）
-  have h2 : (n * c + 2 * (n * x)) * c = (4 * (x * c)) * c := congrArg (fun t => t * c) h
-  rw [Nat.add_mul, Nat.mul_assoc 2 (n * x) c, Nat.mul_assoc n x c,
-      Nat.mul_assoc 4 (x * c) c] at h2
-  -- 目标右端 n·(c·c + x·c + x·c)
+  -- 前提两端各乘 c（右端把 c·c 合并）
+  have h2 : n * c * c + 2 * (n * (x * c)) = 4 * (x * c * c) := by
+    have h5 := congrArg (fun t => t * c) h
+    rw [Nat.add_mul, Nat.mul_assoc 2 (n * x) c, Nat.mul_assoc n x c,
+        Nat.mul_assoc n c c, Nat.mul_assoc 4 (x * c) c] at h5
+    exact h5
+  -- 右端 n·(c·c + x·c + x·c)
   rw [show c * c + x * c + x * c = c * c + (x * c + x * c) from by omega,
       Nat.left_distrib n (c * c) (x * c + x * c),
       Nat.left_distrib n (x * c) (x * c),
-      ← Nat.mul_assoc n c c, ← Nat.mul_assoc n (x * c) c, ← Nat.two_mul (n * (x * c)),
+      Nat.add_assoc (n * (c * c)) (n * (x * c)) (n * (x * c)),
+      ← Nat.mul_assoc n (x * c) c, ← Nat.two_mul (n * (x * c)),
       Nat.mul_assoc 2 (n * (x * c)) c, ← Nat.add_mul]
-  -- 目标左端 4·x·c·c
+  -- 左端 4·x·c·c
   rw [Nat.mul_assoc 4 x (c * c), Nat.mul_assoc 4 (x * (c * c)) c,
       ← Nat.mul_assoc (4 * (x * c)) c, Nat.mul_assoc 4 x c]
   exact h2.symm
