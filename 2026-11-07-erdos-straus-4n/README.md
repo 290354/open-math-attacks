@@ -1,6 +1,6 @@
 # 2026-11-07 · Erdős–Straus 猜想（4/n 的三项单位分分解）：无穷剩余类的 Lean 形式化 + 精确计算核查
 
-> **结论级别：L2（部分形式化）** —— 由 CI 哨兵判定（`BUILD_OK` + `INCOMPLETE`，主命题留有显式 `sorry`）。
+> **结论级别：L1（未验证的尝试）** —— 本沙箱无推送凭据，代码未能推送到 GitHub，CI 未能运行；级别依仓库规则如实降级（工程存在但无 BUILD 结果）。
 > 主命题本身未闭合；本 round 无缺口地形式化了三条无穷剩余类的显式解、提升引理与类覆盖定理，
 > 并以可复现脚本核查了 2 ≤ n ≤ 10000 的全部情形。
 
@@ -60,13 +60,18 @@ python3 scripts/erdos_straus_search.py 10000
 1/y + 1/z = (4x−n)/(nx) 化为最简分数 a/b 后在 (b/a, 2b/a] 内枚举 y），
 每个解回代整式方程校验。显式类 witness 与 Lean 中完全一致。
 
-## 五、级别及依据（由 CI 哨兵决定，非主观）
+## 五、级别及依据（应由 CI 哨兵决定，本轮例外见下）
 
 - CI 工作流：`.github/workflows/lean-verify.yml`（push 触发，构建全部 `*/lean` 工程）。
-- 本轮级别：**L2 = 部分形式化**。依据：`BUILD_OK`（工程编译通过）且 `INCOMPLETE`
-  （`erdos_straus_conjecture` 使用 `sorry`）。未新增任何 `axiom`，未用 `native_decide`。
-- 按 [open-math-attacks README](https://github.com/290354/open-math-attacks) 的分级表，
-  L2 允许的措辞是「部分形式化」；标题/摘要不使用「证明/解决」等词。
+- **本轮 CI 未能运行**：本沙箱既无 `/root/.config/openmath/token`，git credential helper
+  亦无凭据；通过 github-connector 获取的 OAuth token 认证成功（身份 290354）但对该仓库
+  无写权限（push 返回 403 Permission denied，workflow_dispatch 同样 403）。
+  按重试规程共尝试 4 次推送均失败，故依仓库规则如实降级。
+- 本轮级别：**L1 = 未验证的尝试**。依据：Lean 工程存在、主命题已陈述、
+  关键引理有完整证明脚本，但**没有任何 CI BUILD 结果**，级别不允许高于 L1。
+- 若后续有人以有权限的账号推送本目录，CI 出 `BUILD_OK` + `INCOMPLETE`
+  （`erdos_straus_conjecture` 的显式 `sorry`）即可回填 L2；出现 `BUILD_FAIL` 则维持 L1
+  并保留失败记录（不删历史）。
 
 ## 六、失败与局限分析
 
@@ -76,7 +81,9 @@ python3 scripts/erdos_straus_search.py 10000
    故只需查素数」需要核心算术基本定理 API（core 内不便），本轮未做；此为下一轮候选。
 3. **难类显式恒等式未新增**：Mordell mod 840 覆盖比本轮三条类强得多；本轮价值在于
    把一部分标准事实变成机器核查的、可复用的 core-only 形式化资产。
-4. 若 CI 判 `BUILD_FAIL`，级别将如实降为 L1 并保留失败记录（不删历史）。
+4. **发布失败（本轮实际故障）**：推送 4 次均被拒（无凭据 → 403），CI 未能运行，
+   形式化结果未经机器验证，级别被压到 L1。产物按规程存于 `/workspace/openmath/2026-11-07/`。
+5. 若 CI 判 `BUILD_FAIL`，级别将如实记录并保留失败记录（不删历史）。
 
 ## 七、复现步骤
 

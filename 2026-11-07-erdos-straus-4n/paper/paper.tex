@@ -22,8 +22,8 @@ Erd\H{o}s--Straus 猜想断言：对每个整数 $n \ge 2$，方程 $4/n = 1/x +
 提升引理（$n$ 可解 $\Rightarrow k\cdot n$ 可解）及其合成——类覆盖定理；
 （ii）以精确整数算术的可复现脚本核查 $2 \le n \le 10^4$ 的全部情形
 （含 $1666$ 个难类 $n$ 的独立搜索）。主命题在形式化中以显式 \texttt{sorry} 留缺，
-级别由 CI 哨兵（\texttt{BUILD_OK} + \texttt{INCOMPLETE} + \texttt{NO\_AXIOM}）判定为
-\textbf{L2（部分形式化）}。标题与摘要不使用「证明/解决」等词，以与证据等级一致。
+因沙箱缺少仓库推送凭据 CI 未能运行，按仓库规则降级为
+\textbf{L1（未验证的尝试）}。标题与摘要不使用「证明/解决」等词，以与证据等级一致。
 \end{abstract}
 
 \section{问题陈述}
@@ -95,7 +95,8 @@ $y \in (b/a,\, 2b/a]$ 枚举，判定条件 $(ay - b) \mid by$。所有解回代
   \item \textbf{零缺口形式化}（CI \texttt{BUILD_OK}、\texttt{NO\_AXIOM}）：
         \texttt{es\_even}、\texttt{es\_three\_mod\_four}、\texttt{es\_three\_div}、
         \texttt{es\_lift}、\texttt{es\_classes}、\texttt{es\_five}。
-  \item \textbf{留缺}：主命题（\texttt{sorry}），故整体记 \texttt{INCOMPLETE}，级别 L2。
+  \item \textbf{留缺}：主命题（\texttt{sorry}）。因 CI 未能运行，级别 L1；
+        若 CI 运行且 \texttt{BUILD\_OK} + \texttt{INCOMPLETE} 成立，可回填 L2。
   \item \textbf{计算}：$2 \le n \le 10^4$ 全部找到并校验解；难类样例证书：
         $5\colon(2,4,20)$，$13\colon(4,18,468)$，$17\colon(5,30,510)$，
         $25\colon(7,60,2100)$，$29\colon(8,78,9048)$。
