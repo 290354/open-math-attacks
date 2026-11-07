@@ -66,9 +66,9 @@ theorem es_of_core (n x c : Nat)
   rw [show c * c + x * c + x * c = c * c + (x * c + x * c) from by omega,
       Nat.left_distrib n (c * c) (x * c + x * c),
       Nat.left_distrib n (x * c) (x * c),
-      ← Nat.add_assoc (n * (c * c)) (n * (x * c)) (n * (x * c)),
       ← Nat.two_mul (n * (x * c)), Nat.mul_assoc 2 (n * (x * c)) c,
-      ← Nat.add_mul, ← Nat.mul_assoc n (x * c) c]
+      ← Nat.add_mul, ← Nat.add_assoc (n * (c * c)) (n * (x * c)) (n * (x * c)),
+      ← Nat.mul_assoc n (x * c) c]
   -- 左端 4·x·c·c → 4·(x·c·c)
   rw [Nat.mul_assoc 4 x (c * c)]
   exact h2.symm
