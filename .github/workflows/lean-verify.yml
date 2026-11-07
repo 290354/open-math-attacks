@@ -28,7 +28,7 @@ jobs:
 
       - name: Build every Lean project under */lean
         run: |
-          set -uo pipefail
+          set -u
           fail=0
           found=0
           while IFS= read -r manifest; do
@@ -39,10 +39,6 @@ jobs:
             lake exe cache get >/dev/null 2>&1 || true
             out="$(lake build 2>&1)"
             rc=$?
-            echo "--- lake build rc=$rc ---"
-            printf '%s\n' "$out" | head -n 80
-            lake --version 2>&1 || true
-            ls -la || true
             printf '%s\n' "$out"
             if [ $rc -ne 0 ]; then
               echo "::error::BUILD_FAIL $dir"
