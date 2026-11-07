@@ -40,7 +40,7 @@ theorem mul_right (a b c : Nat) : a * b * c = a * c * b := by
 
 /-- (2p)·(2p) = 4·(p·p)。 -/
 theorem sq2p (p : Nat) : 2 * p * (2 * p) = 4 * (p * p) := by
-  rw [Nat.mul_assoc 2 p (2 * p), ← Nat.mul_assoc 2 2 p, Nat.mul_assoc (2 * 2) p p]
+  rw [Nat.mul_assoc 2 p (2 * p), mul_front p 2 (2 * p), ← Nat.mul_assoc 2 2 p]
 
 /-! ### 通用三元引理 -/
 
@@ -58,7 +58,7 @@ theorem es_of_core (n x c : Nat)
   -- 目标右端 n·(c·c + x·c + x·c)
   rw [show c * c + x * c + x * c = c * c + (x * c + x * c) from by omega,
       Nat.left_distrib n (c * c) (x * c + x * c),
-      Nat.left_distrib n (x * c) (x * c), Nat.mul_assoc n c c,
+      Nat.left_distrib n (x * c) (x * c),
       Nat.add_assoc (n * (c * c)) (n * (x * c)) (n * (x * c)),
       ← Nat.mul_assoc n (x * c) c, ← Nat.two_mul (n * (x * c)),
       Nat.mul_assoc 2 (n * (x * c)) c, ← Nat.add_mul]
