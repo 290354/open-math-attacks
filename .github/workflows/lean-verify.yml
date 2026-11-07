@@ -1,0 +1,57 @@
+name: Lean 4 Verification
+
+on:
+  push:
+    paths:
+      - "**/lean/**"
+      - ".github/workflows/lean-verify.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build every Lean project under */lean
+        run: |
+          set -uo pipefail
+          fail=0
+          found=0
+          while IFS= read -r manifest; do
+            dir="$(dirname "$manifest")"
+            found=1
+            echo "::group::lake build $dir"
+            pushd "$dir" >/dev/null
+            lake exe cache get >/dev/null 2>&1 || true
+            if lake build; then
+              echo "BUILD_OK: $dir"
+            else
+              echo "BUILD_FAIL: $dir"
+              fail=1
+            fi
+            echo "--- scan for sorry/admit ---"
+            if grep -rnE '\b(sorry|admit)\b' --include='*.lean' . ; then
+              echo "WARN: $dir contains sorry/admit (not a complete proof)"
+            else
+              echo "CLEAN: no sorry/admit in $dir"
+            fi
+            echo "--- scan for new axioms ---"
+            grep -rnE '^\s*axiom\b' --include='*.lean' . || echo "CLEAN: no axiom declarations"
+            popd >/dev/null
+            echo "::endgroup::"
+          done < <(find . -path '*/lean/lakefile.toml' -o -path '*/lean/lakefile.lean' | sort)
+          if [ "$found" -eq 0 ]; then
+            echo "No Lean project found, nothing to verify."
+          fi
+          exit $fail
