@@ -40,7 +40,8 @@ theorem mul_right (a b c : Nat) : a * b * c = a * c * b := by
 
 /-- (2p)·(2p) = 4·(p·p)。 -/
 theorem sq2p (p : Nat) : 2 * p * (2 * p) = 4 * (p * p) := by
-  rw [Nat.mul_assoc 2 p (2 * p), Nat.mul_comm p 2, Nat.mul_assoc 2 2 (p * p)]
+  rw [Nat.mul_assoc 2 p (2 * p), ← Nat.mul_comm 2 p, Nat.mul_assoc p 2 (2 * p),
+      Nat.mul_assoc 2 2 (p * p)]
 
 /-! ### 通用三元引理 -/
 
@@ -56,10 +57,11 @@ theorem es_of_core (n x c : Nat)
   rw [Nat.add_mul, Nat.mul_assoc 2 (n * x) c, Nat.mul_assoc n x c,
       Nat.mul_assoc 4 (x * c) c] at h2
   -- 目标右端 n·(c·c + x·c + x·c)
-  rw [Nat.left_distrib n (c * c) (x * c + x * c),
-      Nat.left_distrib n (x * c) (x * c), mul_right n (c * c) (x * c),
-      Nat.mul_assoc n c c, ← Nat.mul_assoc n (x * c) c,
-      Nat.mul_assoc 2 (n * (x * c)) c, ← Nat.add_mul, ← Nat.add_assoc]
+  rw [Nat.left_distrib n (c * c) (x * c),
+      Nat.left_distrib n (c * c + x * c) (x * c), Nat.mul_assoc n c c,
+      Nat.add_assoc (n * (c * c)) (n * (x * c)) (n * (x * c)),
+      ← Nat.mul_assoc n (x * c) c, ← Nat.two_mul (n * (x * c)),
+      Nat.mul_assoc 2 (n * (x * c)) c, ← Nat.add_mul]
   -- 目标左端 4·x·c·c
   rw [Nat.mul_assoc 4 x (c * c), Nat.mul_assoc 4 (x * (c * c)) c,
       ← Nat.mul_assoc (4 * (x * c)) c, Nat.mul_assoc 4 x c]
