@@ -27,42 +27,43 @@ def ES (n x y z : Nat) : Prop := 4 * x * y * z = n * (y * z + x * z + x * y)
 
 /-! ### 基础重排引理 -/
 
-/-- a·(b·c) = b·(a·c)。 -/
-theorem mul_front (a b c : Nat) : a * (b * c) = b * (a * c) := by
-  rw [← Nat.mul_assoc a b c]
-  rw [Nat.mul_comm a b]
+/-- 左归一：a·(b·c) 与 (a·b)·c 互换（两方向各一条）。 -/
+theorem assoc' (a b c : Nat) : a * (b * c) = a * b * c := (Nat.mul_assoc a b c).symm
 
-/-- (a·b)·c = b·(a·c)。 -/
-theorem mul_mid (a b c : Nat) : a * b * c = b * (a * c) := by
-  rw [Nat.mul_assoc a b c, Nat.mul_comm a b, Nat.mul_assoc b a c]
+/-- 交换中间两个因子：a·(b·c) = b·(a·c)。 -/
+theorem mul_front (a b c : Nat) : a * (b * c) = b * (a * c) := by
+  rw [← Nat.mul_assoc a b c, Nat.mul_comm a b, Nat.mul_assoc b a c]
+
+/-- 交换最右两个因子：(a·b)·c = (a·c)·b。 -/
+theorem mul_right (a b c : Nat) : a * b * c = a * c * b := by
+  rw [Nat.mul_assoc a b c, Nat.mul_comm b c, ← Nat.mul_assoc a c b]
 
 /-- (2p)·(2p) = 4·(p·p)。 -/
 theorem sq2p (p : Nat) : 2 * p * (2 * p) = 4 * (p * p) := by
-  rw [Nat.mul_assoc 2 p (2 * p)]
-  rw [Nat.mul_comm p 2]
+  rw [Nat.mul_assoc 2 p (2 * p), Nat.mul_comm p 2, Nat.mul_assoc 2 2 (p * p)]
 
 /-! ### 通用三元引理 -/
 
-/-- 若 n·(c·c) + 2·(n·(x·c)) = 4·(x·(c·c))，则 ES n x c c。
-即：把 4/n = 1/x + 1/c + 1/c 两边乘 n·x·c·c 后的整式条件。
-三条无穷剩余类均由此导出（各自给出前提的一个实例）。 -/
+/-- 若 n·c + 2·(n·x) = 4·(x·c)，则 ES n x c c，即 4/n = 1/x + 1/c + 1/c。
+三条无穷剩余类均由此导出。证明只做两件事：把 ES 两端各自乘 c（右端把
+c·c 并入），再使用前提。 -/
 theorem es_of_core (n x c : Nat)
-    (h : n * (c * c) + 2 * (n * (x * c)) = 4 * (x * (c * c))) :
+    (h : n * c + 2 * (n * x) = 4 * (x * c)) :
     ES n x c c := by
   unfold ES
-  -- 右端：n·(c·c + x·c + x·c)
-  have hright : n * (c * c + x * c + x * c) = n * (c * c) + 2 * (n * (x * c)) := by
-    rw [show c * c + x * c + x * c = c * c + (x * c + x * c) from by omega]
-    rw [Nat.left_distrib]
-    rw [Nat.left_distrib]
-    rw [← Nat.two_mul]
-    exact (Nat.add_assoc (n * (c * c)) (n * (x * c)) (n * (x * c))).symm
-  -- 左端：4·x·c·c
-  have hleft : 4 * x * c * c = 4 * (x * (c * c)) := by
-    rw [Nat.mul_assoc x c c]
-    exact (Nat.mul_assoc 4 x (c * c)).symm
-  rw [hleft, hright]
-  exact h.symm
+  -- 两端同乘 c 后的形状（与 h 的 c 倍比较）
+  have h2 : (n * c + 2 * (n * x)) * c = (4 * (x * c)) * c := congrArg (fun t => t * c) h
+  rw [Nat.add_mul, Nat.mul_assoc 2 (n * x) c, Nat.mul_assoc n x c,
+      Nat.mul_assoc 4 (x * c) c] at h2
+  -- 目标右端 n·(c·c + x·c + x·c)
+  rw [Nat.left_distrib n (c * c) (x * c + x * c),
+      Nat.left_distrib n (x * c) (x * c), mul_right n (c * c) (x * c),
+      Nat.mul_assoc n c c, ← Nat.mul_assoc n (x * c) c,
+      Nat.mul_assoc 2 (n * (x * c)) c, ← Nat.add_mul, ← Nat.add_assoc]
+  -- 目标左端 4·x·c·c
+  rw [Nat.mul_assoc 4 x (c * c), Nat.mul_assoc 4 (x * (c * c)) c,
+      ← Nat.mul_assoc (4 * (x * c)) c, Nat.mul_assoc 4 x c]
+  exact h2.symm
 
 /-! ### 三条无穷剩余类 -/
 
@@ -79,8 +80,6 @@ theorem es_three_mod_four (m : Nat) :
 /-- 类 3：3 ∣ n（n = 3k）。 -/
 theorem es_three_div (k : Nat) : ES (3 * k) k (6 * k) (6 * k) := by
   sorry
-
-/-! ### 提升引理 -/
 
 /-- 提升：若 n 可解，则对任意 k，k·n 可解（三个分母同乘 k）。
 推论：猜想的反例若存在，其最小者必为素数，故计算搜索只需考察素数。 -/
