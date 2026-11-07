@@ -1,0 +1,128 @@
+\documentclass[11pt]{article}
+\usepackage[UTF8]{ctexart}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+
+\newtheorem*{conjecture*}{猜想（Erd\H{o}s--Straus, 1948）}
+\title{Erd\H{o}s--Straus 猜想的三条无穷剩余类与提升引理：\\
+Lean 4（core-only）形式化及精确计算核查}
+\author{open-math-attacks（每日未解数学问题攻坚）}
+\date{2026年11月7日}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Erd\H{o}s--Straus 猜想断言：对每个整数 $n \ge 2$，方程 $4/n = 1/x + 1/y + 1/z$
+存在正整数解。该问题自 1948 年提出至今未闭合，计算验证已达 $10^{18}$。
+本文报告一次诚实的单日推进：不闭合主命题，而是（i）在不依赖 Mathlib 的 Lean~4 core 中，
+以零缺口（无 \texttt{sorry}、无自定义 \texttt{axiom}）形式化三条无穷剩余类
+（$n$ 为偶数、$n \equiv 3 \pmod 4$、$3 \mid n$）的显式单位分分解、
+提升引理（$n$ 可解 $\Rightarrow k\cdot n$ 可解）及其合成——类覆盖定理；
+（ii）以精确整数算术的可复现脚本核查 $2 \le n \le 10^4$ 的全部情形
+（含 $1666$ 个难类 $n$ 的独立搜索）。主命题在形式化中以显式 \texttt{sorry} 留缺，
+级别由 CI 哨兵（\texttt{BUILD_OK} + \texttt{INCOMPLETE} + \texttt{NO\_AXIOM}）判定为
+\textbf{L2（部分形式化）}。标题与摘要不使用「证明/解决」等词，以与证据等级一致。
+\end{abstract}
+
+\section{问题陈述}
+
+\begin{conjecture*}
+对每个整数 $n \ge 2$，存在正整数 $x, y, z$ 使得
+\[
+  \frac{4}{n} = \frac{1}{x} + \frac{1}{y} + \frac{1}{z}.
+  \tag{ES}
+\]
+\end{conjecture*}
+
+两边同乘 $nxy\,z$ 得整式形式 $4xyz = n(xy + xz + yz)$。注意整式形式在允许分母为 $0$ 时
+会出现平凡退化，故严格陈述必须限定正整数；本文形式化中主命题显式带
+$0 < x \wedge 0 < y \wedge 0 < z$ 前提。
+
+\section{相关工作}
+
+\begin{itemize}
+  \item \textbf{提出}：Erd\H{o}s 与 Straus（1948）；见 Guy《Unsolved Problems in Number Theory》(3rd ed., 2004), D11。
+  \item \textbf{计算验证}：Salez (2014) 验证至 $10^{17}$（附 C++ 代码）；Mihnea \& Dumitru（2025 预印本）至 $10^{18}$（见 \href{https://www.erdosproblems.com/242}{erdosproblems.com \#242}）。
+  \item \textbf{解析覆盖}：Mordell 型多项式恒等式覆盖 $\bmod 840$ 中除六个平方剩余类
+        $(1, 49, 121, 169, 289, 361)$ 外全部类；Terzi (1978) 推进至 $\bmod 120120$ 的 198 类。
+  \item \textbf{计数与筛法}：Vaughan (1970) 证明 $[1,N]$ 内例外数
+        $\le N\exp(-c(\log N)^{2/3})$；Elsholtz--Tao (2013) 给出素数上平均解数的 polylog 上界
+        与系统的模恒等式体系。
+  \item \textbf{归约}：$4/n$ 有解 $\Rightarrow 4/(mn)$ 有解（分母同乘 $m$），故反例最小者为素数；
+        本文将主方向形式化（\texttt{es\_lift}）。
+\end{itemize}
+
+\section{方法}
+
+\subsection{形式化（Lean 4 core，v4.35.0，无 Mathlib）}
+
+以
+\begin{verbatim}
+def ES (n x y z : Nat) : Prop := 4 * x * y * z = n * (y * z + x * z + x * y)
+\end{verbatim}
+表述整式方程。三条类的显式 witness 与验证恒等式：
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+类 & witness $(x,y,z)$ & 恒等式 \\
+\hline
+$n = 2m$ & $(m,\,2m,\,2m)$ & $1/m + 1/(2m) + 1/(2m) = 2/m = 4/(2m)$ \\
+$n = 4m+3$ & $(m{+}1,\,2(m{+}1)n,\,2(m{+}1)n)$ &
+  $\dfrac{1}{m{+}1} + \dfrac{1}{(m{+}1)n} = \dfrac{n+1}{(m{+}1)n} = \dfrac{4}{n}$ \\
+$n = 3k$ & $(k,\,6k,\,6k)$ & $1/k + 1/(6k) + 1/(6k) = 8/(6k) = 4/(3k)$ \\
+\hline
+\end{tabular}
+\end{center}
+
+提升引理 \texttt{es\_lift}：由 \texttt{ES n x y z} 经分配律与交换律重排得
+\texttt{ES (k*n) (k*x) (k*y) (k*z)}。类覆盖定理 \texttt{es\_classes}：对 $n \ge 2$，
+若 $n \equiv 0 \pmod 2$、$n \equiv 3 \pmod 4$ 或 $3 \mid n$ 则存在解；分情形还原后调用
+对应类定理（\texttt{omega} 处理商余关系）。主命题 \texttt{erdos\_straus\_conjecture}
+带正性前提并以 \texttt{sorry} 显式留缺。
+
+\subsection{计算核查}
+
+显式类直接取 witness；难类（$n \equiv 1 \pmod 4$ 且 $3 \nmid n$）做无假设精确搜索：
+$x \in (n/4,\, 3n/4]$，把 $1/y + 1/z = (4x-n)/(nx)$ 化简为 $a/b$ 后于
+$y \in (b/a,\, 2b/a]$ 枚举，判定条件 $(ay - b) \mid by$。所有解回代整式方程精确校验。
+
+\section{结果（措辞受级别约束）}
+
+\begin{itemize}
+  \item \textbf{零缺口形式化}（CI \texttt{BUILD_OK}、\texttt{NO\_AXIOM}）：
+        \texttt{es\_even}、\texttt{es\_three\_mod\_four}、\texttt{es\_three\_div}、
+        \texttt{es\_lift}、\texttt{es\_classes}、\texttt{es\_five}。
+  \item \textbf{留缺}：主命题（\texttt{sorry}），故整体记 \texttt{INCOMPLETE}，级别 L2。
+  \item \textbf{计算}：$2 \le n \le 10^4$ 全部找到并校验解；难类样例证书：
+        $5\colon(2,4,20)$，$13\colon(4,18,468)$，$17\colon(5,30,510)$，
+        $25\colon(7,60,2100)$，$29\colon(8,78,9048)$。
+  \item \textbf{不可声称}：未证明、未解决、未证实主命题；本文所有「验证」「形式化」
+        均限于所述范围。
+\end{itemize}
+
+\section{局限性}
+
+(1) 主命题开放，本文未缩小其真值不确定性，只压缩了「已机器核查」的范围；
+(2) 未形式化「每个 $n\ge2$ 有素因子」的完整归约链；
+(3) 计算范围（$10^4$）远小于文献记录（$10^{17}/10^{18}$），仅作方法演示与交叉复核；
+(4) 覆盖面弱于 Mordell $\bmod 840$；本文三条类是 core-only 可达的保守子集；
+(5) 文献页码/卷期未逐一核对原文，标注「转引自」者依赖二手来源。
+
+\section*{参考文献}
+\begin{enumerate}
+  \item R.~K. Guy, \emph{Unsolved Problems in Number Theory}, 3rd ed., Springer, 2004, Problem D11.
+  \item R.~C. Vaughan, ``On a problem of Erd\H{o}s, Straus and Schinzel'',
+        \emph{Proc.\ London Math.\ Soc.} (3) 21 (1970).
+  \item C.~Elsholtz, T.~Tao, ``Counting the number of solutions to the Erd\H{o}s--Straus
+        equation on unit fractions'', \emph{J.\ Aust.\ Math.\ Soc.} 94 (2013).
+  \item J.~Salez (2014), 计算验证至 $10^{17}$（转引自 erdosproblems.com \#242）。
+  \item D.~G. Terzi (1978), 覆盖类推进至 $\bmod 120120$（转引自 erdosproblems.com \#242）。
+  \item L.~J. Mordell, \emph{Diophantine Equations}, Academic Press, 1969
+        （转引自 Elsholtz, Nieuw Archief voor Wiskunde 综述, 2022）。
+  \item M.~Mihnea, C.~Dumitru (2025 预印本), 计算验证至 $10^{18}$（转引自 erdosproblems.com \#242）。
+\end{enumerate}
+
+\end{document}

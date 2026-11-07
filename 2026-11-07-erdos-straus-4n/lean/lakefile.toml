@@ -1,0 +1,6 @@
+name = "erdos_straus_4n"
+version = "0.1.0"
+defaultTargets = ["Attack"]
+
+[[lean_lib]]
+name = "Attack"
