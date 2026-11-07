@@ -62,15 +62,15 @@ theorem es_of_core (n x c : Nat)
     rw [Nat.add_mul, Nat.mul_assoc 2 (n * x) c, Nat.mul_assoc n x c,
         Nat.mul_assoc n c c, Nat.mul_assoc 4 (x * c) c] at h5
     exact h5
-  -- 右端 n·(c·c + x·c + x·c)
+  -- 右端 n·(c·c + x·c + x·c) → n·(c·c) + n·(x·c) + n·(x·c)
   rw [show c * c + x * c + x * c = c * c + (x * c + x * c) from by omega,
       Nat.left_distrib n (c * c) (x * c + x * c),
       Nat.left_distrib n (x * c) (x * c),
-      ← Nat.mul_assoc n (x * c) c, ← Nat.two_mul (n * (x * c)),
-      Nat.mul_assoc 2 (n * (x * c)) c, ← Nat.add_mul]
-  -- 左端 4·x·c·c
-  rw [Nat.mul_assoc 4 x (c * c), Nat.mul_assoc 4 (x * (c * c)) c,
-      ← Nat.mul_assoc (4 * (x * c)) c, Nat.mul_assoc 4 x c]
+      Nat.add_assoc (n * (c * c)) (n * (x * c)) (n * (x * c)),
+      ← Nat.two_mul (n * (x * c)), Nat.mul_assoc 2 (n * (x * c)) c,
+      ← Nat.add_mul, ← Nat.mul_assoc n (x * c) c]
+  -- 左端 4·x·c·c → 4·(x·c·c)
+  rw [Nat.mul_assoc 4 x (c * c)]
   exact h2.symm
 
 /-! ### 三条无穷剩余类 -/
