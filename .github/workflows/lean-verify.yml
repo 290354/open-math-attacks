@@ -37,10 +37,13 @@ jobs:
             echo "::group::lake build $dir"
             pushd "$dir" >/dev/null
             lake exe cache get >/dev/null 2>&1 || true
-            if lake build 2>&1 | tee /tmp/lake-build.log; then
+            lake build > /tmp/lake-build.log 2>&1
+            rc=$?
+            cat /tmp/lake-build.log
+            if [ $rc -eq 0 ]; then
               echo "BUILD_OK: $dir"
             else
-              echo "BUILD_FAIL: $dir"
+              echo "BUILD_FAIL: $dir (rc=$rc)"
               fail=1
             fi
             if grep -q "declaration uses 'sorry'" /tmp/lake-build.log; then
