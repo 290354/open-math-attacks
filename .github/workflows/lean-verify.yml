@@ -27,8 +27,8 @@ jobs:
           "$HOME/.elan/bin/elan" --version
 
       - name: Build every Lean project under */lean
+        shell: bash {0}
         run: |
-          set -u
           fail=0
           found=0
           while IFS= read -r manifest; do
@@ -37,22 +37,21 @@ jobs:
             echo "::group::lake build $dir"
             pushd "$dir" >/dev/null
             lake exe cache get >/dev/null 2>&1 || true
-            out="$(lake build 2>&1)"
-            rc=$?
-            printf '%s\n' "$out"
-            if [ $rc -ne 0 ]; then
-              echo "::error::BUILD_FAIL $dir"
-              fail=1
-            else
+            if lake build 2>&1 | tee /tmp/lake-build.log; then
               echo "BUILD_OK: $dir"
+            else
+              echo "BUILD_FAIL: $dir"
+              fail=1
             fi
-            if printf '%s\n' "$out" | grep -q "declaration uses 'sorry'"; then
+            if grep -q "declaration uses 'sorry'" /tmp/lake-build.log; then
               echo "::warning::INCOMPLETE $dir 使用了 sorry，不足以判定为 L3"
+              echo "INCOMPLETE: $dir"
             else
               echo "NO_SORRY: $dir"
             fi
             if grep -rnE '^[[:space:]]*axiom[[:space:]]' --include='*.lean' . ; then
               echo "::warning::AXIOM_DECL $dir 含自定义 axiom，不足以判定为 L3"
+              echo "AXIOM_DECL: $dir"
             else
               echo "NO_AXIOM: $dir"
             fi
