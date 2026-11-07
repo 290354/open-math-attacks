@@ -19,9 +19,12 @@ jobs:
 
       - name: Install elan
         run: |
-          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
-            | sh -s -- -y --default-toolchain none
+          set -eux
+          curl -sSfL --retry 5 --retry-delay 5 --retry-connrefused \
+            -o /tmp/elan-init.sh https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh
+          bash /tmp/elan-init.sh -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" --version
 
       - name: Build every Lean project under */lean
         run: |
