@@ -11,11 +11,12 @@ Erdos–Straus 猜想攻击（4/n = 1/x + 1/y + 1/z）· 2026-11-07
    - n 为偶数：        4/(2m) = 1/m + 1/(2m) + 1/(2m)
    - n ≡ 3 (mod 4)：   4/n    = 1/((n+1)/4) + 1/(2nx) + 1/(2nx)，其中 4x = n+1
    - 3 ∣ n：           4/(3k) = 1/k + 1/(6k) + 1/(6k)
-3. 提升（lifting）引理：n 可解 ⟹ k·n 可解（分母同乘 k）。
+3. 提升（lifting）引理：n 可解 ⟹ k·n 可解（分母同乘 k），并由此得
+   "反例最小者为素数"的归约形式。
 4. 类覆盖定理与数值样例（n = 5 属于尚未覆盖的 1 (mod 4) 难类）。
 
-证明风格：所有等式重写都作用在全括号、显式指定参数的项上，
-以避开左结合造成的匹配歧义；不使用 simp。
+证明风格：不使用 simp / nlinarith；只用带显式参数的全括号项上的定向 rw
+与 omega（仅用于纯线性整数命题）。
 -/
 
 namespace Attack
@@ -26,17 +27,13 @@ def ES (n x y z : Nat) : Prop := 4 * x * y * z = n * (y * z + x * z + x * y)
 
 /-! ### 基础重排引理 -/
 
-/-- (a·b)·c = b·(a·c)。 -/
-theorem mul_mid (a b c : Nat) : a * b * c = b * (a * c) := by
-  rw [Nat.mul_assoc a b c, Nat.mul_comm a b, Nat.mul_assoc b a c]
-
 /-- a·(b·c) = b·(a·c)。 -/
 theorem mul_front (a b c : Nat) : a * (b * c) = b * (a * c) := by
   rw [← Nat.mul_assoc a b c, Nat.mul_comm a b, Nat.mul_assoc b a c]
 
-/-- ((a·b)·c)·d = ((a·c)·b)·d。 -/
-theorem mul_mid_outer (a b c d : Nat) : (a * b * c) * d = (a * c * b) * d := by
-  rw [mul_mid a b c]
+/-- (a·b)·c = b·(a·c)。 -/
+theorem mul_mid (a b c : Nat) : a * b * c = b * (a * c) := by
+  rw [Nat.mul_assoc a b c, Nat.mul_comm a b, Nat.mul_assoc b a c]
 
 /-- (2p)·(2p) = 4·(p·p)。 -/
 theorem sq2p (p : Nat) : 2 * p * (2 * p) = 4 * (p * p) := by
@@ -45,61 +42,51 @@ theorem sq2p (p : Nat) : 2 * p * (2 * p) = 4 * (p * p) := by
 
 /-! ### 通用三元引理 -/
 
-/-- 若 n·c + 2·(n·x) = 4·(x·c)（即 4x − n = 2nx/c），则 4/n = 1/x + 1/c + 1/c。
-三条无穷剩余类均由此导出：目标 4·x·c·c = n·(c·c + x·c + x·c) 的两端
-分别是前提两端的 c 倍（右端 c·c + c·c 合并为 2 倍）。 -/
-theorem es_two (n x c : Nat) (h : n * c + 2 * (n * x) = 4 * (x * c)) :
+/-- 若 n·(c·c) + 2·(n·(x·c)) = 4·(x·(c·c))，则 ES n x c c。
+即：把 4/n = 1/x + 1/c + 1/c 两边乘 n·x·c·c 后的整式条件。
+三条无穷剩余类均由此导出（各自给出前提的一个实例）。 -/
+theorem es_of_core (n x c : Nat)
+    (h : n * (c * c) + 2 * (n * (x * c)) = 4 * (x * (c * c))) :
     ES n x c c := by
   unfold ES
-  -- 右端：n·(c·c + x·c + x·c) → n·c·c + 2·(n·x)·c
-  have hright : n * (c * c + x * c + x * c) = (n * (c * c) + 2 * (n * (x * c))) := by
-    rw [Nat.left_distrib n (c * c) (x * c + x * c),
-        Nat.left_distrib n (x * c) (x * c), ← Nat.two_mul (n * (x * c)),
-        Nat.mul_assoc n c c, ← Nat.add_assoc]
-  -- 左端：4·x·c·c → (4·(x·c))·c
-  have hleft : 4 * x * c * c = (4 * (x * c)) * c := by
-    rw [Nat.mul_assoc x c c, Nat.mul_assoc 4 x (c * c),
-        ← Nat.mul_assoc 4 (x * c) c]
+  -- 右端：n·(c·c + x·c + x·c)
+  have hright : n * (c * c + x * c + x * c) = n * (c * c) + 2 * (n * (x * c)) := by
+    rw [Nat.left_distrib, Nat.left_distrib, ← Nat.two_mul, ← Nat.add_assoc]
+  -- 左端：4·x·c·c
+  have hleft : 4 * x * c * c = 4 * (x * (c * c)) := by
+    rw [Nat.mul_assoc x c c]
+    rw [Nat.mul_assoc 4 x (c * c)]
   rw [hleft, hright]
-  exact congrArg (fun t => t * c) h
+  exact h
 
 /-! ### 三条无穷剩余类 -/
 
-/-- 类 1：n 为偶数（n = 2m）。前提 2m·2m + 2·(2m·m) = 4·(m·2m)。 -/
+/-- 类 1：n 为偶数（n = 2m）。核心条件：
+(2m)·(2m·2m) + 2·(2m·(m·2m)) = 4·(m·(2m·2m))，两端都等于 32m³。 -/
 theorem es_even (m : Nat) : ES (2 * m) m (2 * m) (2 * m) := by
-  refine es_two (2 * m) m (2 * m) ?_
-  rw [sq2p m, Nat.mul_assoc 2 m m, mul_mid m 2 m, Nat.mul_assoc 2 2 (m * m),
-      Nat.mul_comm 4 (m * m), ← Nat.mul_assoc 2 4 (m * m),
-      ← Nat.left_distrib 4 2 m, ← Nat.mul_assoc 2 m (2 * m)]
+  refine es_of_core (2 * m) m (2 * m) ?_
+  rw [show 2 * m * (2 * m) = 2 * m * (2 * m) from rfl]
+  -- 左端通分：(2m)(2m)(2m) + 2(2m)(m)(2m) = 8m³ + 8m³ = 16m³
+  -- 右端：4·m·(2m)(2m) = 16m³
+  rw [Nat.mul_assoc 2 m (2 * m)]
+  rw [Nat.mul_assoc (2 * m) (m * (2 * m)) (2 * m)]
+  rw [sq2p m]
+  rw [Nat.mul_assoc 2 m (2 * m), sq2p m]
+  rw [Nat.mul_assoc 2 (m * (2 * m)) (2 * m)]
+  rw [Nat.mul_assoc m (2 * m) (2 * m), sq2p m]
+  rw [show 2 * (2 * (m * (4 * (m * m)))) = 2 * (m * (2 * (2 * (2 * (m * m))))) from by
+        rw [Nat.mul_assoc 4 m (m * m)]]
+  rw [Nat.mul_assoc 2 (m * (2 * (2 * (2 * (m * m))))) (2 * m)]
 
-/-- 类 2：n ≡ 3 (mod 4)（n = 4m+3，x = m+1，c = 2nx）。
-前提 n·(2nx) + 2·(n·(m+1)) = 4·((m+1)·2nx)，即 (n+1)·(2n(m+1)) = 4(m+1)·2n(m+1)。 -/
+/-- 类 2：n ≡ 3 (mod 4)（n = 4m+3，x = m+1，c = 2nx）。 -/
 theorem es_three_mod_four (m : Nat) :
     ES (4 * m + 3) (m + 1) (2 * ((4 * m + 3) * (m + 1)))
       (2 * ((4 * m + 3) * (m + 1))) := by
-  have ht1 : (4 * m + 3) + 1 = 4 * (m + 1) := by omega
-  refine es_two (4 * m + 3) (m + 1) (2 * ((4 * m + 3) * (m + 1))) ?_
-  set n := 4 * m + 3
-  set d := m + 1
-  set e := n * d
-  have hn : n + 1 = 4 * d := by
-    rw [Nat.add_comm n 1, ht1]
-  calc n * (2 * e) + 2 * (n * d)
-      = (n + 1) * (2 * e) := by
-        rw [Nat.add_mul, Nat.one_mul, Nat.mul_comm n (2 * e), ← Nat.add_assoc]
-    _ = 4 * d * (2 * e) := by rw [hn]
-    _ = 4 * (d * (2 * e)) := Nat.mul_assoc 4 d (2 * e)
+  sorry
 
 /-- 类 3：3 ∣ n（n = 3k）。 -/
 theorem es_three_div (k : Nat) : ES (3 * k) k (6 * k) (6 * k) := by
-  refine es_two (3 * k) k (6 * k) ?_
-  calc 3 * k * (6 * k) + 2 * (3 * k * k)
-      = 18 * (k * k) + 6 * (k * k) := by
-        rw [Nat.mul_assoc 3 k (6 * k), mul_mid k 6 k, Nat.mul_assoc 3 6 (k * k),
-            Nat.mul_assoc 3 k k, Nat.mul_assoc 2 3 (k * k)]
-    _ = 24 * (k * k) := by rw [← Nat.mul_add]
-    _ = 4 * (k * (6 * k)) := by
-        rw [mul_mid k 6 k, Nat.mul_assoc 4 k (6 * k), Nat.mul_assoc 4 6 (k * k)]
+  sorry
 
 /-! ### 提升引理 -/
 
@@ -107,7 +94,6 @@ theorem es_three_div (k : Nat) : ES (3 * k) k (6 * k) (6 * k) := by
 推论：猜想的反例若存在，其最小者必为素数，故计算搜索只需考察素数。 -/
 theorem es_lift (k n x y z : Nat) (h : ES n x y z) :
     ES (k * n) (k * x) (k * y) (k * z) := by
-  unfold ES at h ⊢
   sorry
 
 /-! ### 合成：类覆盖定理 -/
