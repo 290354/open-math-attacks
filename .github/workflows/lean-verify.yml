@@ -34,20 +34,25 @@ jobs:
             echo "::group::lake build $dir"
             pushd "$dir" >/dev/null
             lake exe cache get >/dev/null 2>&1 || true
-            if lake build; then
-              echo "BUILD_OK: $dir"
-            else
-              echo "BUILD_FAIL: $dir"
+            out="$(lake build 2>&1)"
+            rc=$?
+            printf '%s\n' "$out"
+            if [ $rc -ne 0 ]; then
+              echo "::error::BUILD_FAIL $dir"
               fail=1
-            fi
-            echo "--- scan for sorry/admit ---"
-            if grep -rnE '\b(sorry|admit)\b' --include='*.lean' . ; then
-              echo "WARN: $dir contains sorry/admit (not a complete proof)"
             else
-              echo "CLEAN: no sorry/admit in $dir"
+              echo "BUILD_OK: $dir"
             fi
-            echo "--- scan for new axioms ---"
-            grep -rnE '^\s*axiom\b' --include='*.lean' . || echo "CLEAN: no axiom declarations"
+            if printf '%s\n' "$out" | grep -q "declaration uses 'sorry'"; then
+              echo "::warning::INCOMPLETE $dir 使用了 sorry，不足以判定为 L3"
+            else
+              echo "NO_SORRY: $dir"
+            fi
+            if grep -rnE '^[[:space:]]*axiom[[:space:]]' --include='*.lean' . ; then
+              echo "::warning::AXIOM_DECL $dir 含自定义 axiom，不足以判定为 L3"
+            else
+              echo "NO_AXIOM: $dir"
+            fi
             popd >/dev/null
             echo "::endgroup::"
           done < <(find . -path '*/lean/lakefile.toml' -o -path '*/lean/lakefile.lean' | sort)

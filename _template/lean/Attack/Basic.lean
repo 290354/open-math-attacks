@@ -7,7 +7,7 @@ Mathlib 的源码加缓存有数 GB，无法在单次任务的时限内就位。
 
 用法：把整个 lean/ 目录复制到本轮目录下，改 lakefile.toml 里的 name，
 然后 lake build。CI（.github/workflows/lean-verify.yml）会在 push 后自动
-构建仓库里所有 */lean 工程，并扫描 sorry / admit / axiom。
+构建仓库里所有 */lean 工程，读取编译器的未完成证明告警，并扫描自定义公理。
 -/
 
 namespace Attack
