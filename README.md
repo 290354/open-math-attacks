@@ -19,6 +19,24 @@
 | **L1** | 仅命题陈述已形式化，证明为人工论证 | 「未验证的尝试」 |
 | **L0** | 无形式化，仅计算/数值证据 | 「实验性证据」 |
 
+## 验证机制
+
+形式化不依赖本地环境，一律由 CI 判定（`.github/workflows/lean-verify.yml`）：
+
+1. push 触及任意 `*/lean/**` 时触发；
+2. 自动安装 elan，遍历所有 `*/lean` 工程执行 `lake build`；
+3. 日志输出三个哨兵，级别只能由它们决定：
+
+| 哨兵 | 含义 |
+|---|---|
+| `BUILD_OK` / `BUILD_FAIL` | 工程是否编译通过 |
+| `NO_SORRY` / `INCOMPLETE` | 编译器是否报「declaration uses 'sorry'」 |
+| `NO_AXIOM` / `AXIOM_DECL` | 是否存在自定义 `axiom` 声明 |
+
+只有 `BUILD_OK` + `NO_SORRY` + `NO_AXIOM` 同时成立，才允许声称已证明。
+
+**已知约束**：本仓库沙箱出口带宽约 1 MB/min，拉不动 Mathlib（数 GB）。因此形式化限定在 **Lean 4 core** 范围内，能用 core 陈述的命题才可能达到 L3。`_template/lean` 是可直接复制的 core-only 工程骨架。
+
 ## 目录结构
 
 ```
