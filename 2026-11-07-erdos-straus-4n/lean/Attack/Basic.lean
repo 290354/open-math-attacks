@@ -40,9 +40,7 @@ theorem mul_right (a b c : Nat) : a * b * c = a * c * b := by
 
 /-- (2p)·(2p) = 4·(p·p)。 -/
 theorem sq2p (p : Nat) : 2 * p * (2 * p) = 4 * (p * p) := by
-  rw [show 2 * p * (2 * p) = 2 * 2 * p * p from by
-        rw [Nat.mul_assoc 2 p (2 * p), ← Nat.mul_assoc 2 2 p, Nat.mul_assoc (2 * 2) p p]]
-  rw [Nat.mul_comm 2 2]
+  exact Nat.mul_left_comm 2 p (2 * p)
 
 /-! ### 通用三元引理 -/
 
